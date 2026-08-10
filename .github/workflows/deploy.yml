@@ -23,13 +23,13 @@ jobs:
       - name: Install & Build Backend REST API
         run: |
           cd backend
-          npm install --no-audit
+          npm install --force
           npm run build
 
       - name: Install & Build Frontend Web App
         run: |
           cd inamigos-foundation
-          npm install --no-audit
+          npm install --force
           npm run build
 
       - name: Security Scan (SAST Audit)
