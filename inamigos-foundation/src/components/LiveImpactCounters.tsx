@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DYNAMIC_STATS } from '@/lib/data';
-import { Utensils, GraduationCap, Users, MapPin, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Utensils, GraduationCap, Users, MapPin } from 'lucide-react';
 
 export const LiveImpactCounters: React.FC = () => {
   const [stats, setStats] = useState({
@@ -13,8 +13,8 @@ export const LiveImpactCounters: React.FC = () => {
   });
 
   useEffect(() => {
-    const duration = 2000;
-    const steps = 50;
+    const duration = 1500;
+    const steps = 40;
     const intervalTime = duration / steps;
     let step = 0;
 
@@ -44,78 +44,63 @@ export const LiveImpactCounters: React.FC = () => {
 
   const counterCards = [
     {
-      label: 'Hot Cooked Meals Served',
+      label: 'Hot Meals Served',
       value: stats.meals.toLocaleString('en-IN') + '+',
       icon: Utensils,
-      color: 'bg-emerald-100 text-emerald-700',
-      borderColor: 'border-emerald-200',
-      subtext: 'Freshly served across slum clusters',
+      subtext: 'Fresh daily food distribution',
     },
     {
-      label: 'Girls Under Shiksha Mission',
+      label: 'Girls Educated',
       value: stats.children.toLocaleString('en-IN') + '+',
       icon: GraduationCap,
-      color: 'bg-amber-100 text-amber-700',
-      borderColor: 'border-amber-200',
-      subtext: 'Tuition, books & digital tools',
+      subtext: 'Shiksha Mission sponsorships',
     },
     {
-      label: 'Active Youth Volunteers',
+      label: 'Active Volunteers',
       value: stats.volunteers.toLocaleString('en-IN') + '+',
       icon: Users,
-      color: 'bg-blue-100 text-blue-700',
-      borderColor: 'border-blue-200',
       subtext: 'Across 12 major Indian cities',
     },
     {
-      label: 'Ground Relief Drives Conducted',
+      label: 'Ground Drives',
       value: stats.drives.toLocaleString('en-IN') + '+',
       icon: MapPin,
-      color: 'bg-purple-100 text-purple-700',
-      borderColor: 'border-purple-200',
-      subtext: 'Geotagged & photo verified',
+      subtext: 'Geotagged relief operations',
     },
   ];
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white border-b border-slate-200">
-      <div className="max-w-7xl mx-auto space-y-12">
+    <section className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-50 border-b border-slate-100">
+      <div className="max-w-7xl mx-auto space-y-10">
         {/* Section Header */}
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800">
-            <TrendingUp className="w-3.5 h-3.5" />
+        <div className="text-center space-y-2 max-w-xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Verified Field Impact
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Real Numbers, Real Change On The Ground
           </h2>
-          <p className="text-sm text-slate-600">
-            Our live impact metrics are aggregated directly from database-verified drive log receipts.
+          <p className="text-xs sm:text-sm text-slate-500">
+            Real-time metrics aggregated directly from database-verified drive logs.
           </p>
         </div>
 
         {/* Counter Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {counterCards.map((card, idx) => {
             const Icon = card.icon;
             return (
               <div
                 key={idx}
-                className={`clean-card clean-card-hover p-6 rounded-3xl ${card.borderColor} space-y-4`}
+                className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-3"
               >
-                <div className="flex items-center justify-between">
-                  <div className={`w-12 h-12 rounded-2xl ${card.color} flex items-center justify-center`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Icon className="w-5 h-5" />
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight font-mono">
+                  <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-mono">
                     {card.value}
                   </h3>
-                  <p className="text-sm font-bold text-slate-800">{card.label}</p>
-                  <p className="text-xs text-slate-500 pt-1">{card.subtext}</p>
+                  <p className="text-xs font-extrabold text-slate-800">{card.label}</p>
+                  <p className="text-[11px] text-slate-400">{card.subtext}</p>
                 </div>
               </div>
             );

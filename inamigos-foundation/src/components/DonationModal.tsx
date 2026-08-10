@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, ShieldCheck, Heart, CreditCard, QrCode, Lock, CheckCircle2, Download, AlertCircle } from 'lucide-react';
+import { X, ShieldCheck, Heart, CheckCircle2, Download, AlertCircle } from 'lucide-react';
 import { Cause } from '@/lib/data';
 import { generate80GReceiptPDF } from '@/lib/pdf-receipt';
 import { submitDonationToBackend } from '@/lib/api-client';
@@ -20,104 +20,57 @@ export const DonationModal: React.FC<DonationModalProps> = ({
   selectedCause,
   initialAmount = 2500,
 }) => {
-  const [step, setStep] = useState<'amount' | 'details' | 'processing' | 'success'>('amount');
-  const [amount, setAmount] = useState<number>(initialAmount);
-  const [customAmount, setCustomAmount] = useState<string>('');
-  const [paymentMode, setPaymentMode] = useState<'UPI' | 'Card' | 'NetBanking' | 'International'>('UPI');
-  
   const [donorName, setDonorName] = useState('');
-  const [donorEmail, setDonorEmail] = useState('');
+  const [donationAmount, setDonationAmount] = useState<string>(initialAmount ? initialAmount.toString() : '2500');
   const [donorPhone, setDonorPhone] = useState('');
-  const [donorPan, setDonorPan] = useState('');
-  const [needTaxReceipt, setNeedTaxReceipt] = useState(true);
+
+  const [step, setStep] = useState<'form' | 'processing' | 'success'>('form');
 
   // Validation Error States
   const [nameError, setNameError] = useState('');
-  const [emailError, setEmailError] = useState('');
+  const [amountError, setAmountError] = useState('');
   const [phoneError, setPhoneError] = useState('');
-  const [panError, setPanError] = useState('');
   const [formGeneralError, setFormGeneralError] = useState('');
 
   const [transactionId, setTransactionId] = useState('');
   const [receiptNo, setReceiptNo] = useState('');
 
   useEffect(() => {
-    if (initialAmount) setAmount(initialAmount);
+    if (initialAmount) setDonationAmount(initialAmount.toString());
   }, [initialAmount]);
 
   if (!isOpen) return null;
 
-  const presetAmounts = [500, 1000, 2500, 5000, 10000];
-
-  // Validation RegEx Rules
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   const phoneRegex = /^(?:(?:\+91)|(?:0))?[6-9]\d{9}$/;
-  const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 
   const validateFields = (): boolean => {
     let isValid = true;
     setNameError('');
-    setEmailError('');
+    setAmountError('');
     setPhoneError('');
-    setPanError('');
     setFormGeneralError('');
 
     // 1. Name Validation
     if (!donorName.trim() || donorName.trim().length < 2) {
-      setNameError('Please enter your full legal name.');
+      setNameError('Please enter your full name.');
       isValid = false;
     }
 
-    // 2. Email Format & Existence Validation
-    if (!donorEmail.trim()) {
-      setEmailError('Email address is required for 80G receipt delivery.');
-      isValid = false;
-    } else if (!emailRegex.test(donorEmail.trim())) {
-      setEmailError('Invalid email address format (e.g. name@domain.com).');
+    // 2. Amount Validation
+    const amtNum = Number(donationAmount);
+    if (!donationAmount || isNaN(amtNum) || amtNum <= 0) {
+      setAmountError('Please enter a valid donation amount in INR.');
       isValid = false;
     }
 
     // 3. Indian Mobile Number Validation
     const cleanPhone = donorPhone.replace(/\s+/g, '');
-    if (cleanPhone && !phoneRegex.test(cleanPhone)) {
-      setPhoneError('Invalid Indian mobile number. Must be 10 digits starting with 6-9.');
-      isValid = false;
-    }
-
-    // 4. PAN Number Format & Requirement Validation
-    const cleanPan = donorPan.trim().toUpperCase();
-    if (needTaxReceipt) {
-      if (!cleanPan) {
-        setPanError('PAN Number is mandatory to claim Section 80G tax exemption.');
-        isValid = false;
-      } else if (!panRegex.test(cleanPan)) {
-        setPanError('Invalid PAN format! Must be 5 letters + 4 numbers + 1 letter (e.g. ABCDE1234F).');
-        isValid = false;
-      }
-    } else if (cleanPan && !panRegex.test(cleanPan)) {
-      setPanError('Invalid PAN format! Must be 5 letters + 4 numbers + 1 letter (e.g. ABCDE1234F).');
+    if (!cleanPhone || !phoneRegex.test(cleanPhone)) {
+      setPhoneError('Please enter a valid 10-digit Indian mobile number.');
       isValid = false;
     }
 
     return isValid;
-  };
-
-  const handleSelectAmount = (amt: number) => {
-    setAmount(amt);
-    setCustomAmount('');
-  };
-
-  const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setCustomAmount(val);
-    if (val && !isNaN(Number(val))) {
-      setAmount(Number(val));
-    }
-  };
-
-  const handleProceedToDetails = () => {
-    if (amount <= 0) return;
-    setStep('details');
   };
 
   const handleSimulatePayment = async (e: React.FormEvent) => {
@@ -127,16 +80,16 @@ export const DonationModal: React.FC<DonationModalProps> = ({
       return;
     }
 
+    const amtNum = Number(donationAmount);
     setStep('processing');
 
-    // Call decoupled Backend API service
     const apiResult = await submitDonationToBackend({
-      amount,
+      amount: amtNum,
       donorName: donorName.trim(),
-      donorEmail: donorEmail.trim(),
+      donorEmail: `${donorName.trim().toLowerCase().replace(/\s+/g, '.')}@donor.inamigos.org`,
       donorPhone: donorPhone.trim(),
-      donorPan: donorPan.trim().toUpperCase(),
-      paymentMode,
+      donorPan: 'N/A',
+      paymentMode: 'UPI',
       causeTitle: selectedCause ? selectedCause.title : 'General Relief & Hunger Fund',
     });
 
@@ -151,7 +104,7 @@ export const DonationModal: React.FC<DonationModalProps> = ({
       });
     } else if (apiResult && apiResult.error) {
       setFormGeneralError(apiResult.error);
-      setStep('details');
+      setStep('form');
     } else {
       setTransactionId('TXN_' + Math.random().toString(36).substring(2, 10).toUpperCase());
       setReceiptNo('IAM-80G-' + Math.floor(100000 + Math.random() * 900000));
@@ -165,14 +118,15 @@ export const DonationModal: React.FC<DonationModalProps> = ({
   };
 
   const handleDownloadReceipt = () => {
+    const amtNum = Number(donationAmount);
     generate80GReceiptPDF({
       receiptNo,
       donorName,
-      donorEmail,
+      donorEmail: `${donorName.trim().toLowerCase().replace(/\s+/g, '.')}@donor.inamigos.org`,
       donorPhone,
-      donorPan,
-      amount,
-      paymentMode,
+      donorPan: 'N/A',
+      amount: amtNum,
+      paymentMode: 'UPI',
       transactionId,
       causeName: selectedCause ? selectedCause.title : 'General Relief & Hunger Fund',
       date: new Date().toLocaleString('en-IN'),
@@ -180,149 +134,52 @@ export const DonationModal: React.FC<DonationModalProps> = ({
   };
 
   const handleResetAndClose = () => {
-    setStep('amount');
+    setStep('form');
     setNameError('');
-    setEmailError('');
+    setAmountError('');
     setPhoneError('');
-    setPanError('');
     setFormGeneralError('');
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white w-full max-w-xl rounded-3xl border border-slate-200 overflow-hidden shadow-2xl relative">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+      <div className="bg-white w-full max-w-md rounded-2xl border border-slate-200 overflow-hidden shadow-xl relative">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
               <Heart className="w-5 h-5 fill-emerald-600" />
             </div>
             <div>
-              <h3 className="text-lg font-extrabold text-slate-900">
-                {step === 'success' ? 'Donation Successful!' : 'Secure Donation Portal'}
+              <h3 className="text-base font-extrabold text-slate-900">
+                {step === 'success' ? 'Donation Complete' : 'Make a Donation'}
               </h3>
-              <p className="text-xs text-emerald-700 font-bold flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" /> Strict Validation Active | 80G Tax Deductible
+              <p className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" /> 100% Secure | Section 80G Certified
               </p>
             </div>
           </div>
 
           <button
             onClick={handleResetAndClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {selectedCause && step !== 'success' && (
-          <div className="bg-emerald-50 border-b border-emerald-100 px-6 py-2.5 flex items-center justify-between text-xs">
-            <span className="text-slate-700 font-medium truncate max-w-[280px]">
+          <div className="bg-emerald-50 border-b border-emerald-100 px-5 py-2 text-xs">
+            <span className="text-slate-700 font-medium truncate block">
               Sponsoring: <strong className="text-slate-900">{selectedCause.title}</strong>
             </span>
-            <span className="text-emerald-800 font-bold bg-white px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-sm">
-              {selectedCause.impactRatio}
-            </span>
           </div>
         )}
 
-        {/* Step 1: Amount & Payment Mode */}
-        {step === 'amount' && (
-          <div className="p-6 space-y-6">
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Select Donation Amount (INR):
-              </label>
-              <div className="grid grid-cols-3 gap-2.5">
-                {presetAmounts.map((amt) => (
-                  <button
-                    key={amt}
-                    onClick={() => handleSelectAmount(amt)}
-                    className={`py-3 px-2 rounded-2xl text-sm font-extrabold transition-all border ${
-                      amount === amt && !customAmount
-                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-md'
-                        : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    ₹{amt.toLocaleString('en-IN')}
-                  </button>
-                ))}
-              </div>
-
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="Or enter custom amount in INR..."
-                  value={customAmount}
-                  onChange={handleCustomAmountChange}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-600 rounded-2xl py-3 px-4 text-sm font-bold text-slate-900 placeholder-slate-400 outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Payment Mode Selector */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Preferred Payment Method:
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'UPI', label: 'UPI / GPay / QR', icon: QrCode },
-                  { id: 'Card', label: 'Credit / Debit Card', icon: CreditCard },
-                  { id: 'NetBanking', label: 'NetBanking (All Banks)', icon: Lock },
-                  { id: 'International', label: 'International (USD/EUR)', icon: ShieldCheck },
-                ].map((mode) => {
-                  const Icon = mode.icon;
-                  return (
-                    <button
-                      key={mode.id}
-                      onClick={() => setPaymentMode(mode.id as any)}
-                      className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-bold border transition-all ${
-                        paymentMode === mode.id
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-extrabold'
-                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4 text-emerald-600" />
-                      {mode.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Tax Savings Hint */}
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-center justify-between text-xs">
-              <span className="text-slate-700">Section 80G Tax Saved (30% slab):</span>
-              <strong className="text-amber-800 font-extrabold text-sm">
-                ₹{Math.round(amount * 0.5 * 0.3 * 1.04).toLocaleString('en-IN')}
-              </strong>
-            </div>
-
-            <button
-              onClick={handleProceedToDetails}
-              className="w-full py-4 rounded-2xl text-base font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20"
-            >
-              Proceed with ₹{amount.toLocaleString('en-IN')} Donation
-            </button>
-          </div>
-        )}
-
-        {/* Step 2: Donor Contact & PAN Details with Strict Real-Time Validation */}
-        {step === 'details' && (
+        {/* Minimal Form: Name, Amount, Phone */}
+        {step === 'form' && (
           <form onSubmit={handleSimulatePayment} className="p-6 space-y-4">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-500 pb-2 border-b border-slate-100">
-              <span>Selected Amount: <strong className="text-emerald-700">₹{amount.toLocaleString('en-IN')}</strong></span>
-              <button
-                type="button"
-                onClick={() => setStep('amount')}
-                className="text-emerald-700 hover:underline"
-              >
-                Change
-              </button>
-            </div>
-
             {formGeneralError && (
               <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -330,168 +187,117 @@ export const DonationModal: React.FC<DonationModalProps> = ({
               </div>
             )}
 
-            <div className="space-y-3">
-              {/* Name Field */}
+            <div className="space-y-3.5">
+              {/* 1. Name Field */}
               <div>
-                <label className="text-xs font-bold text-slate-700">Full Name *</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Full Name *</label>
                 <input
                   type="text"
-                  placeholder="e.g. Vikramaditya Sharma"
+                  placeholder="Enter your full name..."
                   value={donorName}
                   onChange={(e) => {
                     setDonorName(e.target.value);
                     if (nameError) setNameError('');
                   }}
-                  className={`w-full bg-slate-50 border rounded-xl py-2.5 px-3.5 text-sm text-slate-900 placeholder-slate-400 outline-none mt-1 transition-colors ${
-                    nameError ? 'border-red-500 focus:border-red-600 bg-red-50/20' : 'border-slate-200 focus:border-emerald-600'
+                  className={`w-full bg-slate-50 border rounded-xl py-2.5 px-3.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition-colors ${
+                    nameError ? 'border-red-500 bg-red-50/20' : 'border-slate-200 focus:border-emerald-600'
                   }`}
                 />
                 {nameError && <p className="text-[11px] text-red-600 font-bold mt-1">{nameError}</p>}
               </div>
 
-              {/* Email & Phone Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-700">Email Address *</label>
+              {/* 2. Amount Field (No Preset Buttons) */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Donation Amount (INR) *</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-2.5 text-sm font-extrabold text-slate-400">₹</span>
                   <input
-                    type="email"
-                    placeholder="vikram@example.com"
-                    value={donorEmail}
+                    type="number"
+                    placeholder="Enter amount in ₹..."
+                    value={donationAmount}
                     onChange={(e) => {
-                      setDonorEmail(e.target.value);
-                      if (emailError) setEmailError('');
+                      setDonationAmount(e.target.value);
+                      if (amountError) setAmountError('');
                     }}
-                    className={`w-full bg-slate-50 border rounded-xl py-2.5 px-3.5 text-sm text-slate-900 placeholder-slate-400 outline-none mt-1 transition-colors ${
-                      emailError ? 'border-red-500 focus:border-red-600 bg-red-50/20' : 'border-slate-200 focus:border-emerald-600'
+                    className={`w-full bg-slate-50 border rounded-xl py-2.5 pl-8 pr-3.5 text-sm font-bold text-slate-900 placeholder-slate-400 outline-none transition-colors ${
+                      amountError ? 'border-red-500 bg-red-50/20' : 'border-slate-200 focus:border-emerald-600'
                     }`}
                   />
-                  {emailError && <p className="text-[11px] text-red-600 font-bold mt-1">{emailError}</p>}
                 </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700">Mobile Number (Indian)</label>
-                  <input
-                    type="tel"
-                    placeholder="9876543210"
-                    value={donorPhone}
-                    onChange={(e) => {
-                      setDonorPhone(e.target.value);
-                      if (phoneError) setPhoneError('');
-                    }}
-                    className={`w-full bg-slate-50 border rounded-xl py-2.5 px-3.5 text-sm text-slate-900 placeholder-slate-400 outline-none mt-1 transition-colors ${
-                      phoneError ? 'border-red-500 focus:border-red-600 bg-red-50/20' : 'border-slate-200 focus:border-emerald-600'
-                    }`}
-                  />
-                  {phoneError && <p className="text-[11px] text-red-600 font-bold mt-1">{phoneError}</p>}
-                </div>
+                {amountError && <p className="text-[11px] text-red-600 font-bold mt-1">{amountError}</p>}
               </div>
 
-              {/* PAN Number Field for 80G Tax Exemption */}
+              {/* 3. Mobile Number Field */}
               <div>
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-700">
-                    PAN Number {needTaxReceipt ? '*' : '(Optional)'}
-                  </label>
-                  <span className="text-[10px] text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded-full">Format: ABCDE1234F</span>
-                </div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Mobile Number (Indian) *</label>
                 <input
-                  type="text"
-                  maxLength={10}
-                  placeholder="e.g. ABCDE1234F"
-                  value={donorPan}
+                  type="tel"
+                  placeholder="e.g. 9876543210"
+                  value={donorPhone}
                   onChange={(e) => {
-                    setDonorPan(e.target.value.toUpperCase());
-                    if (panError) setPanError('');
+                    setDonorPhone(e.target.value);
+                    if (phoneError) setPhoneError('');
                   }}
-                  className={`w-full bg-slate-50 border rounded-xl py-2.5 px-3.5 text-sm text-slate-900 uppercase placeholder-slate-400 outline-none mt-1 font-mono tracking-wider transition-colors ${
-                    panError ? 'border-red-500 focus:border-red-600 bg-red-50/20' : 'border-slate-200 focus:border-emerald-600'
+                  className={`w-full bg-slate-50 border rounded-xl py-2.5 px-3.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition-colors ${
+                    phoneError ? 'border-red-500 bg-red-50/20' : 'border-slate-200 focus:border-emerald-600'
                   }`}
                 />
-                {panError && <p className="text-[11px] text-red-600 font-bold mt-1">{panError}</p>}
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="taxCheck"
-                  checked={needTaxReceipt}
-                  onChange={(e) => {
-                    setNeedTaxReceipt(e.target.checked);
-                    if (!e.target.checked && panError) setPanError('');
-                  }}
-                  className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
-                />
-                <label htmlFor="taxCheck" className="text-xs text-slate-700 cursor-pointer">
-                  Generate & email official Section 80G Tax Exemption PDF receipt immediately.
-                </label>
+                {phoneError && <p className="text-[11px] text-red-600 font-bold mt-1">{phoneError}</p>}
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-4 rounded-2xl text-base font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20"
+              className="w-full py-3.5 rounded-xl text-sm font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-xs mt-2"
             >
-              Complete Payment (₹{amount.toLocaleString('en-IN')})
+              Complete Donation
             </button>
           </form>
         )}
 
-        {/* Step 3: Payment Processing */}
+        {/* Processing State */}
         {step === 'processing' && (
-          <div className="p-12 text-center space-y-6">
-            <div className="w-16 h-16 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin mx-auto" />
-            <div className="space-y-2">
-              <h4 className="text-lg font-bold text-slate-900">Verifying Strict Field Format & API Response...</h4>
-              <p className="text-xs text-slate-500">
-                Calling decoupled Express backend & generating 80G Tax Receipt PDF...
-              </p>
+          <div className="p-10 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin mx-auto" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-slate-900">Processing Donation...</h4>
+              <p className="text-xs text-slate-400">Communicating with backend API server...</p>
             </div>
           </div>
         )}
 
-        {/* Step 4: Success & Download 80G Receipt */}
+        {/* Success State */}
         {step === 'success' && (
-          <div className="p-8 text-center space-y-6 animate-in zoom-in-95">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 mx-auto">
-              <CheckCircle2 className="w-10 h-10" />
+          <div className="p-6 text-center space-y-5 animate-in zoom-in-95">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 mx-auto">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
 
-            <div className="space-y-2">
-              <h4 className="text-2xl font-black text-slate-900">Thank You, {donorName}!</h4>
+            <div className="space-y-1">
+              <h4 className="text-xl font-black text-slate-900">Thank You, {donorName}!</h4>
               <p className="text-xs text-slate-600">
-                Your contribution of <strong className="text-emerald-700">₹{amount.toLocaleString('en-IN')}</strong> has been received and logged into our Express API database.
+                Your donation of <strong className="text-emerald-700">₹{Number(donationAmount).toLocaleString('en-IN')}</strong> has been successfully processed.
               </p>
             </div>
 
-            {/* Receipt Summary Box */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left text-xs space-y-2 font-mono">
-              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-left text-xs space-y-1.5 font-mono">
+              <div className="flex justify-between border-b border-slate-200 pb-1">
                 <span className="text-slate-500">Receipt No:</span>
                 <span className="text-emerald-700 font-bold">{receiptNo}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+              <div className="flex justify-between">
                 <span className="text-slate-500">Transaction ID:</span>
                 <span className="text-slate-800">{transactionId}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Section 80G Tax Status:</span>
-                <span className="text-amber-700 font-bold">50% Deduction Approved</span>
-              </div>
             </div>
 
-            <div className="space-y-3">
-              <button
-                onClick={handleDownloadReceipt}
-                className="w-full py-3.5 rounded-2xl text-sm font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Download 80G Tax Exemption Receipt (PDF)
-              </button>
-
-              <p className="text-[11px] text-slate-500">
-                A copy has also been sent to <strong>{donorEmail}</strong>
-              </p>
-            </div>
+            <button
+              onClick={handleDownloadReceipt}
+              className="w-full py-3 rounded-xl text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-xs flex items-center justify-center gap-1.5"
+            >
+              <Download className="w-4 h-4" />
+              Download 80G Tax Receipt (PDF)
+            </button>
           </div>
         )}
       </div>
