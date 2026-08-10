@@ -4,15 +4,16 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   // Generate random cryptographic nonce for Content Security Policy
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const isDev = process.env.NODE_ENV !== 'production';
   
-  // Construct Strict Content Security Policy (Zero wildcards, nonces for scripts)
+  // Construct Content Security Policy header supporting React DevTools & HMR
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com https://checkout.razorpay.com;
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://checkout.razorpay.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com data:;
     img-src 'self' blob: data: https://images.unsplash.com https://cdn.pixabay.com;
-    connect-src 'self' https://api.stripe.com https://api.razorpay.com;
+    connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* https://api.stripe.com https://api.razorpay.com;
     frame-src 'self' https://js.stripe.com https://api.razorpay.com;
     frame-ancestors 'self';
     form-action 'self';

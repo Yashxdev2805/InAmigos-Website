@@ -46,6 +46,8 @@ export interface BoardMember {
   qualification: string;
   bio: string;
   image: string;
+  email?: string;
+  linkedIn?: string;
 }
 
 export interface VolunteerRole {
@@ -234,6 +236,7 @@ export const BOARD_MEMBERS: BoardMember[] = [
     qualification: 'Ph.D. Development Economics (IIT Delhi)',
     bio: 'Over 14 years of grassroots experience in non-profit management, social policy execution, and community development.',
     image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop',
+    email: 'aarav@inamigosfoundation.org.in',
   },
   {
     name: 'Priya Mukherjee, FCA',
@@ -241,6 +244,7 @@ export const BOARD_MEMBERS: BoardMember[] = [
     qualification: 'Fellow Chartered Accountant (ICAI)',
     bio: 'Oversees strict financial compliance, zero-corruption internal controls, and audited fund allocations for maximum donor transparency.',
     image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=400&auto=format&fit=crop',
+    email: 'priya.m@inamigosfoundation.org.in',
   },
   {
     name: 'Rohan Verma',
@@ -248,6 +252,31 @@ export const BOARD_MEMBERS: BoardMember[] = [
     qualification: 'M.S.W. (TISS Mumbai)',
     bio: 'Leads a network of 1,800+ youth volunteers across 12 cities, executing daily relief drives and educational camps.',
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop',
+    email: 'rohan.v@inamigosfoundation.org.in',
+  },
+  {
+    name: 'Ananya Sen',
+    role: 'Head of Volunteer Relations & Outreach',
+    qualification: 'M.A. Public Policy (St. Xavier’s)',
+    bio: 'Manages volunteer onboarding, training workshops, and university outreach programs across major Indian cities.',
+    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=400&auto=format&fit=crop',
+    email: 'ananya.s@inamigosfoundation.org.in',
+  },
+  {
+    name: 'Vikramaditya Rao',
+    role: 'Chief Compliance & Legal Counsel',
+    qualification: 'LL.M. (National Law University)',
+    bio: 'Ensures 100% compliance with Section 80G/12A regulations, NITI Aayog guidelines, and statutory audit filings.',
+    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=400&auto=format&fit=crop',
+    email: 'compliance@inamigosfoundation.org.in',
+  },
+  {
+    name: 'Sunita Deshmukh',
+    role: 'Senior Program Manager (Shiksha Mission)',
+    qualification: 'M.Ed. (Delhi University)',
+    bio: 'Directs educational curriculum development, digital tablet distribution, and girls scholarship initiatives.',
+    image: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?q=80&w=400&auto=format&fit=crop',
+    email: 'sunita.d@inamigosfoundation.org.in',
   },
 ];
 
