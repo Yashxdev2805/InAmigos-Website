@@ -1,0 +1,7 @@
+# InAmigos Foundation - Production robots.txt
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://inamigosfoundation.org.in/sitemap.xml

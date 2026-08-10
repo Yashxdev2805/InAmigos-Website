@@ -1,0 +1,193 @@
+// InAmigos Foundation - Database Relational Schema
+// Database Engine: PostgreSQL / MySQL (Strictly bound to 127.0.0.1)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  FINANCE_MANAGER
+  VOLUNTEER_MANAGER
+  CONTENT_EDITOR
+  DONOR
+  VOLUNTEER
+}
+
+enum DonationStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+}
+
+enum VolunteerStatus {
+  APPLIED
+  ORIENTATION_SENT
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  phone         String?
+  role          Role      @default(DONOR)
+  passwordHash  String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  donations     Donation[]
+  volunteers    Volunteer?
+  auditLogs     AuditLog[]
+}
+
+model Donor {
+  id            String     @id @default(uuid())
+  name          String
+  email         String     @unique
+  phone         String?
+  pan           String?
+  totalDonated  Float      @default(0)
+  receiptsCount Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  donations     Donation[]
+}
+
+model Cause {
+  id            String     @id @default(uuid())
+  title         String
+  slug          String     @unique
+  category      String
+  shortDesc     String
+  fullDesc      String
+  image         String
+  targetAmount  Float
+  raisedAmount  Float      @default(0)
+  donorCount    Int        @default(0)
+  impactRatio   String
+  unitCost      Float
+  unitLabel     String
+  urgency       String     @default("Ongoing")
+  location      String
+  isPublished   Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+
+  donations     Donation[]
+}
+
+model Donation {
+  id             String         @id @default(uuid())
+  receiptNo      String         @unique
+  transactionId  String         @unique
+  amount         Float
+  currency       String         @default("INR")
+  paymentMode    String         // UPI, Card, NetBanking
+  status         DonationStatus @default(PENDING)
+  donorName      String
+  donorEmail     String
+  donorPhone     String?
+  donorPan       String?
+  
+  causeId        String?
+  cause          Cause?         @relation(fields: [causeId], references: [id])
+
+  userId         String?
+  user           User?          @relation(fields: [userId], references: [id])
+
+  donorId        String?
+  donor          Donor?         @relation(fields: [donorId], references: [id])
+
+  receipt80G     Receipt80G?
+  createdAt      DateTime       @default(now())
+}
+
+model Receipt80G {
+  id             String   @id @default(uuid())
+  receiptNo      String   @unique
+  urnNumber      String   @default("AAATI4958RE20214")
+  taxDeduction   Float    @default(50.0) // 50% deduction
+  pdfPath        String?
+  issuedAt       DateTime @default(now())
+
+  donationId     String   @unique
+  donation       Donation @relation(fields: [donationId], references: [id])
+}
+
+model Volunteer {
+  id             String          @id @default(uuid())
+  name           String
+  email          String          @unique
+  phone          String
+  city           String
+  roleTitle      String
+  availability   String
+  status         VolunteerStatus @default(APPLIED)
+  loggedHours    Int             @default(0)
+  buddyName      String?
+  createdAt      DateTime        @default(now())
+
+  userId         String?         @unique
+  user           User?           @relation(fields: [userId], references: [id])
+
+  rsvps          RSVP[]
+  certificates   Certificate[]
+}
+
+model GroundEvent {
+  id                   String   @id @default(uuid())
+  title                String
+  date                 String
+  time                 String
+  location             String
+  city                 String
+  type                 String
+  volunteersNeeded     Int
+  volunteersRegistered Int      @default(0)
+  image                String
+  description          String
+  createdAt            DateTime @default(now())
+
+  rsvps                RSVP[]
+}
+
+model RSVP {
+  id          String      @id @default(uuid())
+  role        String
+  registered  DateTime    @default(now())
+
+  eventId     String
+  event       GroundEvent @relation(fields: [eventId], references: [id])
+
+  volunteerId String
+  volunteer   Volunteer   @relation(fields: [volunteerId], references: [id])
+}
+
+model Certificate {
+  id             String    @id @default(uuid())
+  certNumber     String    @unique
+  hoursLogged    Int
+  issuedDate     DateTime  @default(now())
+
+  volunteerId    String
+  volunteer      Volunteer @relation(fields: [volunteerId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String
+  ipAddress   String
+  metadata    String?
+  createdAt   DateTime @default(now())
+
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+}

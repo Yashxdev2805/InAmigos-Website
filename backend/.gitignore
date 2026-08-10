@@ -1,0 +1,77 @@
+# ==========================================
+# InAmigos Foundation - Backend .gitignore
+# Security Audit & Secrets Exclusion Policy
+# ==========================================
+
+# 1. Environment & API Secrets (CRITICAL)
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+.env.*.local
+*.env
+
+# 2. Service Account Keys & OAuth Credentials
+service_account_google_indexing.json
+*.json.key
+credentials.json
+gcp-key.json
+firebase-key.json
+google-services.json
+
+# 3. Private Cryptographic Keys & Certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+
+# 4. Local Database Files & Dumps
+*.sqlite
+*.db
+*.dump
+*.sql
+dev.db
+dev.db-journal
+
+# 5. Dependencies & Node Modules
+node_modules/
+/.pnp
+.pnp.js
+
+# 6. Build Outputs & Compilations
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+
+# 7. Logs & Security Audits
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# 8. Extra, Uploads & Temporary Scratch Folders
+extra/
+scratch/
+temp/
+tmp/
+uploads/
+uploads_backup/
+private/
+coverage/
+
+# 9. IDE & System OS Junk
+.vscode/
+.idea/
+.gemini/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini

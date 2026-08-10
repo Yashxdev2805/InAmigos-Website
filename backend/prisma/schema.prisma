@@ -1,0 +1,93 @@
+// InAmigos Foundation - Decoupled Backend Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  FINANCE_MANAGER
+  VOLUNTEER_MANAGER
+  DONOR
+}
+
+enum DonationStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+}
+
+model Donor {
+  id            String     @id @default(uuid())
+  name          String
+  email         String     @unique
+  phone         String?
+  pan           String?
+  totalDonated  Float      @default(0)
+  createdAt     DateTime   @default(now())
+
+  donations     Donation[]
+}
+
+model Cause {
+  id            String     @id @default(uuid())
+  title         String
+  slug          String     @unique
+  category      String
+  shortDesc     String
+  targetAmount  Float
+  raisedAmount  Float      @default(0)
+  donorCount    Int        @default(0)
+  impactRatio   String
+  unitCost      Float
+  createdAt     DateTime   @default(now())
+
+  donations     Donation[]
+}
+
+model Donation {
+  id             String         @id @default(uuid())
+  receiptNo      String         @unique
+  transactionId  String         @unique
+  amount         Float
+  currency       String         @default("INR")
+  paymentMode    String
+  status         DonationStatus @default(SUCCESSFUL)
+  donorName      String
+  donorEmail     String
+  donorPhone     String?
+  donorPan       String?
+  
+  causeId        String?
+  cause          Cause?         @relation(fields: [causeId], references: [id])
+
+  donorId        String?
+  donor          Donor?         @relation(fields: [donorId], references: [id])
+
+  createdAt      DateTime       @default(now())
+}
+
+model Volunteer {
+  id             String   @id @default(uuid())
+  name           String
+  email          String   @unique
+  phone          String
+  city           String
+  roleTitle      String
+  availability   String
+  status         String   @default("APPLIED")
+  loggedHours    Int      @default(0)
+  createdAt      DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String
+  ipAddress   String
+  createdAt   DateTime @default(now())
+}
